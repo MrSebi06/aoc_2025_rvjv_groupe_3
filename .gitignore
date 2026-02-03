@@ -1,1 +1,3 @@
 /target
+*.txt
+!*_test.txt
