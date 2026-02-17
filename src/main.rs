@@ -1,6 +1,7 @@
 mod d1;
 mod d2;
 mod d3;
+mod d4;
 
 fn main() {
     // D1
@@ -13,7 +14,10 @@ fn main() {
 
     // D3
     // println!("d3p1: {}", d3::p1(include_str!("d3/d3.txt")));
-    println!("d3p2: {}", d3::p2_mika(include_str!("d3/d3.txt")));
+    // println!("d3p2: {}", d3::p2_mika(include_str!("d3/d3_test.txt")));
     // println!("d3p2: {}", d3::p2_sacha(include_str!("d3/d3.txt"), 12));
     // println!("d3p2: {}", d3::p2_seb(include_str!("d3/d3.txt")));
+
+    // D4
+    println!("d4p1: {}", d4::p1(include_str!("d4/d4.txt")));
 }
