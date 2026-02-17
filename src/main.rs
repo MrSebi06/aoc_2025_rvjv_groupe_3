@@ -19,5 +19,7 @@ fn main() {
     // println!("d3p2: {}", d3::p2_seb(include_str!("d3/d3.txt")));
 
     // D4
-    println!("d4p1: {}", d4::p1(include_str!("d4/d4.txt")));
+    // println!("d4p1: {}", d4::p1(include_str!("d4/d4.txt")));
+    println!("d4p2: {}", d4::p2(include_str!("d4/d4.txt")));
+
 }
