@@ -24,6 +24,7 @@ fn main() {
     // println!("d4p2: {}", d4::p2(include_str!("d4/d4.txt")));
 
     // D5
-    println!("d5p1: {}", d5::p1(include_str!("d5/d5.txt")));
+    // println!("d5p1: {}", d5::p1(include_str!("d5/d5.txt")));
+    println!("d5p2: {}", d5::p2(include_str!("d5/d5.txt")));
 
 }

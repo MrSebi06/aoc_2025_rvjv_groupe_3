@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 pub fn p1(input: &str) -> u64 {
     let mut counter = 0;
 
@@ -21,26 +23,45 @@ pub fn p1(input: &str) -> u64 {
                 // ici on en est au ID
                 let number = split.next().expect("OH NOOOOO").parse::<u64>().unwrap();
 
-                for (lower, upper) in ranges.iter()
-                {
+                for (lower, upper) in ranges.iter() {
                     if number >= *lower && number <= *upper {
                         counter += 1;
-                        break
+                        break;
                     }
                 }
             }
-            continue
+            continue;
         } else {
             range = false
         }
-        for (i, current) in line_str.chars().enumerate() {}
     }
 
     counter
 }
 
-pub fn p2(input: &str) -> u64 {
-    0
+pub fn p2(input: &str) -> usize {
+    let mut valid_ids = HashSet::new();
+
+    for line in input.lines() {
+        let line_str = line.to_string();
+
+        if line_str != "" {
+            let mut split = line_str.split("-");
+
+            let lower = split.next().expect("Oups").parse::<u64>().unwrap();
+            let upper = split.next().expect("Oups").parse::<u64>().unwrap();
+
+            for id in lower..=upper {
+                valid_ids.insert(id);
+            }
+
+            continue;
+        } else {
+            break;
+        }
+    }
+
+    valid_ids.len()
 }
 
 #[cfg(test)]
