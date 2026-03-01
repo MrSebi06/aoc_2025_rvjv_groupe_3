@@ -37,9 +37,9 @@ pub fn p2(input: &str) -> usize {
             _ => 1
         };
 
-        if (direction == -1 && distance >= cur_pos && cur_pos != 0) {
+        if direction == -1 && distance >= cur_pos && cur_pos != 0 {
             counter += 1;
-        } else if (direction == 1 && distance >= 100 - cur_pos  && cur_pos != 0) {
+        } else if direction == 1 && distance >= 100 - cur_pos  && cur_pos != 0 {
             counter += 1;
         }
         cur_pos = (cur_pos + (direction * distance)).rem_euclid(100);
