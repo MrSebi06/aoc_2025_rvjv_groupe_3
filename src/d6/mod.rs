@@ -2,13 +2,14 @@ pub fn p1(input: &str) -> u64 {
     let mut counter = 0;
     let mut numbers = vec![0u64; 0];
 
+    let mut len_line = 0;
     let mut len_problem = 0;
     // Get table
     for line in input.lines() {
         let line_str = line.to_string();
 
         // I love whoever implemented this split
-        let mut split = line_str.split_whitespace();
+        let split = line_str.split_whitespace();
 
         for (i, to_parse) in split.enumerate()
         {
@@ -21,24 +22,25 @@ pub fn p1(input: &str) -> u64 {
             }
 
             // Resolving is simple:
-            //   We know the list is, in fact, a SQUARE of equations.
+            //   We know the list is, in fact, a RECTANGLE of equations.
             //   This means that the next number in a problem is directly below the last
             //   i.e: numbers[0] * numbers[0 + len_problem] * numbers[0 + 2*len_problem] etc
             let mut res = numbers[i];
             match to_parse
             {
-                "+" => { for j in 1..len_problem - 1 { res += numbers[j * len_problem + i] } }
-                "*" => { for j in 1..len_problem - 1 { res *= numbers[j * len_problem + i] } }
+                "+" => { for j in 1..len_problem { res += numbers[j * len_line + i] } }
+                "*" => { for j in 1..len_problem { res *= numbers[j * len_line + i] } }
                 _ => {}
             }
 
             counter += res;
         }
 
+        len_problem += 1;
         // Memorize problem length on first pass
-        if (len_problem == 0)
+        if (len_line == 0)
         {
-            len_problem = numbers.iter().count();
+            len_line = numbers.iter().count();
         }
 
         continue;
@@ -48,83 +50,66 @@ pub fn p1(input: &str) -> u64 {
 }
 
 pub fn p2(input: &str) -> u64 {
-    let mut ranges = vec![(0u64, 0u64); 0];
+    let mut result = 0u64;
 
-    // Cache all ranges
-    for line in input.lines() {
-        let line_str = line.to_string();
+    let mut lines = input.lines().collect::<Vec<&str>>();
+    let lines_len = lines.len();
 
-        if line_str != "" {
-            let mut split = line_str.split("-");
-
-            ranges.push((
-                split.next().expect("Oups").parse::<u64>().unwrap(),
-                split.next().expect("Oups").parse::<u64>().unwrap(),
-            ));
-        } else {
-            break;
-        }
-    }
-
-    // Optimize ranges
-    let mut len = ranges.len();
     let mut i = 0;
-    while i < len {
-        let (mut current_lower, mut current_upper) = ranges[i];
-        // println!("current: {current_lower}-{current_upper}");
+    let mut char: char;
 
-        let mut j = 0;
-        while j < len {
-            if j == i {
-                j += 1;
-                continue;
+    let mut numbers: Vec<u64> = vec![];
+    let mut number: String = String::new();
+
+    while true {
+        let line = lines[i];
+        let mut chars = line.chars();
+
+        let expected = chars.next_back();
+        if expected.is_none(){
+            println!("Line HERE: {line}")
+        }
+        char = expected.unwrap();
+        lines[i] = chars.as_str();
+
+        if i == lines_len - 1 {
+            let mut res = 0;
+
+            let trimmed_number = number.trim();
+            if trimmed_number.len() != 0 {
+                numbers.push(trimmed_number.parse::<u64>().unwrap());
             }
 
-            let (other_lower, other_upper) = ranges[j];
-            // println!("other: {other_lower}-{other_upper}");
-
-            if current_upper <= other_upper && current_upper >= other_lower {
-                current_upper = other_upper;
-                if other_lower <= current_lower {
-                    current_lower = other_lower
-                }
-                // println!("new range: {current_lower}-{current_upper}");
-                ranges[i] = (current_lower, current_upper);
-                ranges.remove(j);
-                len -= 1;
-                j = 0;
-                i = 0;
-
-                (current_lower, current_upper) = ranges[0];
-            } else if current_lower <= other_upper && current_lower >= other_lower {
-                current_lower = other_lower;
-                if other_upper >= current_upper {
-                    current_upper = other_upper
-                }
-                // println!("new range: {current_lower}-{current_upper}");
-                ranges[i] = (current_lower, current_upper);
-                ranges.remove(j);
-                len -= 1;
-                j = 0;
-                i = 0;
-
-                (current_lower, current_upper) = ranges[0];
+            match char {
+                 '+' => {
+                     for num in numbers.iter() {res += num}
+                     numbers.clear();
+                     result += res;
+                 },
+                 '*' => {
+                     res = 1;
+                     for num in numbers.iter() {res *= num}
+                     numbers.clear();
+                     result += res;
+                 },
+                 _ => {}
             }
 
-            j += 1;
+            i = 0;
+            number = String::new();
+
+            if lines[i].len() == 0 {
+                break;
+            }
+
+            continue;
         }
 
-        i += 1;
+        number.push(char);
+        i = i+1;
     }
 
-    // Count results
-    let mut counter = 0;
-    for (lower, upper) in ranges.iter() {
-        // println!("range: {lower}-{upper}");
-        counter += upper - lower + 1;
-    }
-
-    counter
+    result
 }
 
 #[cfg(test)]
@@ -140,6 +125,6 @@ mod tests {
     #[test]
     fn p2_test() {
         let input = include_str!("d6_test.txt");
-        assert_eq!(p2(input), 202)
+        assert_eq!(p2(input), 3263827)
     }
 }
