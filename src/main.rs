@@ -8,6 +8,7 @@ mod d5;
 mod d6;
 mod d7;
 mod d8;
+mod d10;
 
 mod d9;
 
@@ -48,5 +49,8 @@ fn main() {
 
     // D9
     // println!("d9p1: {}", d9::p1(include_str!("d9/d9.txt")));
-    println!("d9p2: {}", d9::p2(include_str!("d9/d9.txt")));
+    // println!("d9p2: {}", d9::p2(include_str!("d9/d9.txt")));
+    
+    // D10
+    println!("d8p1: {}", d10::p1(include_str!("d10/d10.txt")));
 }
