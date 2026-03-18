@@ -47,7 +47,7 @@ pub fn p1(input: &str, max_connections: usize) -> u64 {
             (Some(index_circuit_a), Some(index_circuit_b)) if index_circuit_a == index_circuit_b => {},
             // Here is the trick of this day event, the two circuits are different, we need to merge them
             (Some(index_circuit_a), Some(index_circuit_b)) => {
-                // We remove the circuit with the bigger index to avoid extend the smaller one
+                // We remove the circuit at the larger index first so the smaller index stays valid
                 let larger_index = index_circuit_a.max(index_circuit_b);
                 let smaller_index = index_circuit_a.min(index_circuit_b);
 
@@ -112,7 +112,7 @@ pub fn p2(input: &str) -> i64 {
                 last_junction_box_a = junction_box_a;
                 last_junction_box_b = junction_box_b;
 
-                // We remove the circuit with the bigger index to avoid extend the smaller one
+                // We remove the circuit at the larger index first so the smaller index stays valid
                 let larger_index = index_circuit_a.max(index_circuit_b);
                 let smaller_index = index_circuit_a.min(index_circuit_b);
 
