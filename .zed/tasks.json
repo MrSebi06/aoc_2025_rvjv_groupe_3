@@ -1,0 +1,22 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+//
+// Example:
+[
+  {
+    "label": "Run optimized",
+    "command": "cargo run",
+    "args": ["-r"],
+    "use_new_terminal": false,
+    // Whether to allow multiple instances of the same task to be run, or rather wait for the existing ones to finish, defaults to `false`.
+    // What to do with the terminal pane and tab, after the command was started:
+    // * `always` — always show the task's pane, and focus the corresponding tab in it (default)
+    // * `no_focus` — always show the task's pane, add the task's tab in it, but don't focus it
+    // * `never` — do not alter focus, but still add/reuse the task's tab in its pane
+    "reveal": "always",
+    "reveal_target": "dock",
+    "hide": "never",
+    "shell": "system",
+    "show_summary": true,
+    "show_command": true,
+  },
+]

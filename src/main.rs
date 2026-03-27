@@ -48,5 +48,9 @@ fn main() {
 
     // D9
     // println!("d9p1: {}", d9::p1(include_str!("d9/d9.txt")));
-    println!("d9p2: {}", d9::p2(include_str!("d9/d9.txt")));
+    // println!("d9p2: {}", d9::p2(include_str!("d9/d9.txt")));
+
+    // D11
+    // println!("d11p1: {}", d11::p1(include_str!("d11/d11.txt")));
+    // println!("d11p2: {}", d11::p2(include_str!("d11/d11.txt")));
 }
