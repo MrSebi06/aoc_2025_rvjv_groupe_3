@@ -18,6 +18,14 @@ pub fn check_res(expected: &Vec<bool>, current: &Vec<bool>) -> bool {
     true
 }
 
+pub fn voltage_to_lights(voltage: &Vec<usize>) -> Vec<bool> {
+    let mut res = vec![false; 0];
+    for v in voltage {
+        res.push(v % 2 == 1)
+    }
+    res
+}
+
 pub fn p1(input: &str) -> u64 {
     let mut count = 0;
 
@@ -126,8 +134,296 @@ pub fn p1(input: &str) -> u64 {
     count
 }
 
-pub fn p2(input: &str) -> i64 {
-    0
+// First, a semi-copy-paste of P1. We'll need it for P2
+// The major difference is, this time, we want to return every possible button combination that worked as a list of buttons to use later
+#[derive(Default)]
+struct BfsBufferP2 {
+    lights_state: Vec<bool>,
+    button_index: usize,
+    remaining_buttons: Vec<usize>,
+    pressed_buttons: Vec<usize>,
+    depth: u64,
+}
+
+pub fn is_voltage_even(voltage: &Vec<usize>) -> bool
+{
+    for v in voltage
+    {
+        if *v % 2 != 0 { return false }
+    }
+    true
+}
+
+pub fn is_voltage_null(voltage: &Vec<usize>) -> bool
+{
+    for v in voltage
+    {
+        if *v != 0 { return false }
+    }
+    true
+}
+
+pub fn get_lights_hash(lights: &Vec<bool>) -> usize
+{
+    let mut res = 0;
+    for i in 0..lights.len() { if lights[i] { res += usize::pow(2, i as u32) } }
+    res
+}
+
+pub fn bfs_solve_pattern(lights: &Vec<bool>, buttons: &Vec<Vec<usize>>) -> Vec<Vec<usize>>
+{
+    let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
+    let rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
+    for i in 0..buttons.len() {
+        let mut rem_buttons = rem_buttons_global.clone();
+        rem_buttons.remove(i);
+
+        let buffer = BfsBufferP2 {
+            lights_state: vec![false; lights.len()],
+            button_index: i,
+            remaining_buttons: rem_buttons,
+            pressed_buttons: vec![0; 0],
+            depth: 1,
+        };
+        queue.push_back(buffer)
+    }
+
+    let mut explored_states: Vec<Vec<bool>> = vec![vec![false; lights.len()]; 0];
+    let mut solutions: Vec<Vec<usize>> = vec![];
+    while !queue.is_empty() {
+        let buffer = queue.pop_front().unwrap();
+        let button = &buttons[buffer.button_index];
+
+        let mut lights_state = buffer.lights_state;
+        // Apply button operations to our current state
+        for i in button {
+            lights_state[*i] = !lights_state[*i]
+        }
+
+        let mut pre_buttons = buffer.pressed_buttons;
+        pre_buttons.push(buffer.button_index);
+
+        // Test if current result fits our expected result...
+        if check_res(&lights, &lights_state) {
+            solutions.push(pre_buttons.clone());
+            continue
+        }
+
+        /*
+        let mut explored = false;
+        for explored_state in explored_states.iter() {
+            if check_res(&lights_state, &explored_state) {
+                explored = true;
+                break;
+            }
+        }
+        if explored {
+            continue;
+        }
+
+        explored_states.push(lights_state.clone());
+         */
+
+        // If not, then start pushing further possibilities into the queue
+        // TODO: Trim the sent possibilities so we don't lose time on useless ones (For example using the same button twice)
+        // That is easily the best way to optimize this approach
+        let mut rem_buttons = buffer.remaining_buttons.clone();
+        for i in buffer.remaining_buttons.iter() {
+            rem_buttons.remove(rem_buttons.iter().position(|&r| &r == i).unwrap());
+
+            let new_buffer = BfsBufferP2 {
+                lights_state: lights_state.clone(),
+                button_index: *i,
+                remaining_buttons: rem_buttons.clone(),
+                pressed_buttons: pre_buttons.clone(),
+                depth: buffer.depth + 1,
+            };
+            queue.push_back(new_buffer)
+        }
+    }
+
+    solutions
+}
+
+pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Vec<Vec<usize>>>>
+{
+    let mut cache = vec![None; usize::pow(2, len as u32)];
+
+    cache[0] = Some(vec![]);
+    for i in 0..buttons.len() { cache[0].as_mut().unwrap().push(vec![i; 2]) }
+
+    let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
+    let mut rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
+    for i in 0..buttons.len() {
+        rem_buttons_global.remove(0);
+
+        let buffer = BfsBufferP2 {
+            lights_state: vec![false; len],
+            button_index: i,
+            remaining_buttons: rem_buttons_global.clone(),
+            pressed_buttons: vec![0; 0],
+            depth: 1,
+        };
+        queue.push_back(buffer)
+    }
+
+    while !queue.is_empty() {
+        let buffer = queue.pop_front().unwrap();
+        let button = &buttons[buffer.button_index];
+
+        let mut lights_state = buffer.lights_state;
+        // Apply button operations to our current state
+        for i in button {
+            lights_state[*i] = !lights_state[*i]
+        }
+
+        let mut pre_buttons = buffer.pressed_buttons;
+        pre_buttons.push(buffer.button_index);
+
+        // Test if current result fits our expected result...
+        let hash = get_lights_hash(&lights_state);
+        if cache[hash].is_none() {
+            cache[hash] = Some(vec![pre_buttons.clone(); 1])
+        } else {
+            cache[hash].as_mut().unwrap().push(pre_buttons.clone());
+        }
+
+        // If not, then start pushing further possibilities into the queue
+        // TODO: Trim the sent possibilities so we don't lose time on useless ones (For example using the same button twice)
+        // That is easily the best way to optimize this approach
+        let mut rem_buttons = buffer.remaining_buttons.clone();
+        for i in buffer.remaining_buttons.iter() {
+            rem_buttons.remove(rem_buttons.iter().position(|&r| &r == i).unwrap());
+
+            let new_buffer = BfsBufferP2 {
+                lights_state: lights_state.clone(),
+                button_index: *i,
+                remaining_buttons: rem_buttons.clone(),
+                pressed_buttons: pre_buttons.clone(),
+                depth: buffer.depth + 1,
+            };
+            queue.push_back(new_buffer)
+        }
+    }
+
+    cache
+}
+
+// This recursive approach is taken from u/tenthmascot's fascinating post on Reddit: https://www.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
+// The Rust implementation, of course, is home-made with love
+pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solutions_cache: &mut Vec<Option<Vec<Vec<usize>>>>) -> u64
+{
+    // Recursive exit condition: If all voltages == 0, then we are done.
+    if is_voltage_null(voltage) { return 0 }
+
+    // What should the indicator lights look like when we're done...?
+    let lights = voltage_to_lights(&voltage);
+
+    // To avoid executing a BFS everytime, we'll cache the solutions found for each state.
+    let hash = get_lights_hash(&lights);
+    let mut solutions;
+
+    // What are the solutions to reach these indicator lights according to P1?
+    let solutions_check = solutions_cache[hash].clone();
+    if solutions_check.is_none()
+    {
+        solutions = bfs_solve_pattern(&lights, buttons);
+        solutions_cache[hash] = Some(solutions.clone());
+    } else { solutions = solutions_check.unwrap() }
+
+    let mut result: Option<u64> = None;
+    for solution in solutions
+    {
+        // Let's apply this solution to our voltage, and then divide the resulting voltage by 2
+        let mut new_voltage = voltage.clone();
+        let mut invalid_flag = false;
+        for button_i in solution.clone()
+        {
+            for i in buttons[button_i].clone() {
+
+                // Be careful of invalid solutions that overflow
+                if new_voltage[i] == 0 { invalid_flag = true; break }
+                else { new_voltage[i] -= 1 };
+
+            }
+            if invalid_flag { break }
+        }
+
+        if invalid_flag { continue }
+
+        let mut divisions = 0;
+        if !is_voltage_null(&new_voltage)
+        {
+            while is_voltage_even(&new_voltage)
+            {
+                for i in 0..new_voltage.len() {
+                    new_voltage[i] /= 2
+                }
+                divisions += 1;
+            }
+        }
+
+        let presses = presses_for_voltage(&new_voltage, &buttons, solutions_cache);
+        let count = u64::pow(2, divisions) * presses + solution.len() as u64;
+
+        if count < result.unwrap_or(404000) {
+            // You can't get much lower than 1 so...
+            if count == 1 { return 1 }
+            result = Some(count);
+        }
+    }
+
+    result.unwrap_or(404000)
+}
+
+pub fn p2(input: &str) -> u64 {
+    let mut count = 0;
+
+    for line in input.lines() {
+        // Input format is messy, long process to treat it correctly
+        let mut split = line.split(" ");
+
+        // Part 2, we can skip lights
+        split.next();
+
+        let mut buttons = vec![vec![0; 0]; 0];
+        let mut voltage = vec![0; 0];
+        for (i, button_str) in split.enumerate() {
+
+            if button_str.starts_with('{') {
+                let button_str = &button_str[1..button_str.len() - 1];
+                let voltage_indicators = button_str.split(",");
+                for voltage_str in voltage_indicators {
+                    voltage.push(voltage_str.parse::<usize>().unwrap())
+                }
+
+                continue;
+            }
+
+            let mut triggers = vec![0; 0];
+
+            let button_str = &button_str[1..button_str.len() - 1];
+            let button_triggers = button_str.split(",");
+            for trig_str in button_triggers {
+                triggers.push(trig_str.parse::<usize>().unwrap())
+            }
+
+            buttons.push(triggers);
+        }
+
+        let mut solutions_cache = brute_force_cache(&buttons, voltage.len());
+
+        let presses = presses_for_voltage(&voltage, &buttons, &mut solutions_cache);
+        if presses == 404000
+        {
+            println!("AAAAAAAH")
+        }
+        count += presses;
+
+        println!("Progress...")
+    }
+
+    count
 }
 
 #[cfg(test)]
@@ -143,6 +439,6 @@ mod tests {
     #[test]
     fn p2_test() {
         let input = include_str!("d10_test.txt");
-        assert_eq!(p2(input), 7)
+        assert_eq!(p2(input), 33)
     }
 }
