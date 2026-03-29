@@ -1,3 +1,5 @@
+type Grid = Vec<u64>;
+
 #[derive(Debug, Clone, Copy)]
 struct Shape([u8; 3]);
 
@@ -51,21 +53,85 @@ impl From<[u8; 3]> for Shape {
     }
 }
 
-fn solve(possibilities: &[Vec<Vec<u64>>], grid: &mut Vec<u64>, shape_idx: usize) -> bool {
+fn empty_cells(grid: &Grid, size_x: usize) -> u32 {
+    grid.iter()
+        .map(|row| size_x as u32 - row.count_ones())
+        .sum()
+}
+
+fn solve(
+    possibilities: &[Vec<Grid>],
+    grid: &mut Grid,
+    shape_idx: usize,
+    remaining_cells: &[u32],
+    size_x: usize,
+) -> bool {
     if shape_idx == possibilities.len() {
-        return true; // all shapes placed without overlap
+        return true;
+    }
+    if empty_cells(grid, size_x) < remaining_cells[shape_idx] {
+        return false;
     }
     for placement in &possibilities[shape_idx] {
-        // check no overlap with current grid state
         if placement.iter().zip(grid.iter()).all(|(&a, &b)| a & b == 0) {
-            // apply placement
             for (g, &p) in grid.iter_mut().zip(placement.iter()) {
                 *g |= p;
             }
-            if solve(possibilities, grid, shape_idx + 1) {
+            if solve(possibilities, grid, shape_idx + 1, remaining_cells, size_x) {
                 return true;
             }
-            // undo placement (backtrack)
+            for (g, &p) in grid.iter_mut().zip(placement.iter()) {
+                *g &= !p;
+            }
+        }
+    }
+    false
+}
+
+fn solve_v2(
+    possibilities: &[Vec<Grid>],
+    grid: &mut Grid,
+    shape_idx: usize,
+    remaining_cells: &[u32],
+    size_x: usize,
+    groups: &[usize],
+    min_index: &mut Vec<usize>,
+) -> bool {
+    if shape_idx == possibilities.len() {
+        return true;
+    }
+
+    if empty_cells(grid, size_x) < remaining_cells[shape_idx] {
+        return false;
+    }
+
+    // If same shape as previous slot, skip placements before previous choice
+    let start = if shape_idx > 0 && groups[shape_idx] == groups[shape_idx - 1] {
+        min_index[shape_idx - 1]
+    } else {
+        0
+    };
+
+    for (i, placement) in possibilities[shape_idx].iter().enumerate() {
+        if i < start {
+            continue;
+        }
+        if placement.iter().zip(grid.iter()).all(|(&a, &b)| a & b == 0) {
+            for (g, &p) in grid.iter_mut().zip(placement.iter()) {
+                *g |= p;
+            }
+            min_index[shape_idx] = i;
+            if solve_v2(
+                possibilities,
+                grid,
+                shape_idx + 1,
+                remaining_cells,
+                size_x,
+                groups,
+                min_index,
+            ) {
+                return true;
+            }
             for (g, &p) in grid.iter_mut().zip(placement.iter()) {
                 *g &= !p;
             }
@@ -78,7 +144,7 @@ pub fn p1(input: &str) -> u64 {
     let mut lines = input.lines().peekable();
     let mut blocks = vec![];
     while lines.peek().is_some() {
-        let block: Vec<_> = lines
+        let block: Vec<&str> = lines
             .by_ref()
             .take_while(|l| l.trim().len() > 0 && !l.ends_with(":"))
             .collect();
@@ -100,7 +166,7 @@ pub fn p1(input: &str) -> u64 {
                     .map(|(i, c)| if c == '#' { 1u8 << i } else { 0 })
                     .sum()
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
         shapes.push(Shape::from(arr));
@@ -127,59 +193,134 @@ pub fn p1(input: &str) -> u64 {
             .splitn(shapes.len(), " ")
             .map(|x| x.parse().unwrap())
             .collect();
-        let mut possibilities: Vec<Vec<Vec<u64>>> = vec![Vec::new(); allowed_shapes.iter().sum()];
-        let mut groups: Vec<usize> = Vec::new();
-        let mut slot = 0;
-        for (i, shape) in shapes.iter().enumerate() {
-            for _ in 0..allowed_shapes[i] {
-                groups.push(i);
-                let mut seen = std::collections::HashSet::new();
-                let orientations: Vec<Shape> = shape
-                    .all_orientations()
-                    .filter(|s| seen.insert(s.0))
-                    .collect();
-                for oriented_shape in orientations {
-                    for y in 0..size_y {
-                        for x in 0..size_x {
-                            let mask = (1u64 << size_x) - 1;
+        let total_pieces: usize = allowed_shapes.iter().sum();
+        let blocks = (size_x / 3) * (size_y / 3);
 
-                            if y + oriented_shape.0.len() > size_y {
-                                continue;
-                            }
+        if total_pieces <= blocks {
+            counter += 1;
+        } else {
+            let total_cells: usize = allowed_shapes
+                .iter()
+                .zip(shapes.iter())
+                .map(|(&count, shape)| {
+                    count
+                        * shape
+                            .0
+                            .iter()
+                            .map(|r| r.count_ones() as usize)
+                            .sum::<usize>()
+                })
+                .sum();
+            if total_cells > size_x * size_y {
+                // Impossible: not enough room
+                continue;
+            } else {
+                let mut possibilities: Vec<Vec<Grid>> =
+                    vec![Vec::new(); allowed_shapes.iter().sum()];
+                let mut groups: Vec<usize> = Vec::new();
+                let mut slot = 0;
+                for (i, shape) in shapes.iter().enumerate() {
+                    for _ in 0..allowed_shapes[i] {
+                        groups.push(i);
+                        let mut seen = std::collections::HashSet::new();
+                        let orientations: Vec<Shape> = shape
+                            .all_orientations()
+                            .filter(|s| seen.insert(s.0))
+                            .collect();
+                        for oriented_shape in orientations {
+                            for y in 0..size_y {
+                                for x in 0..size_x {
+                                    let mask = (1u64 << size_x) - 1;
 
-                            let lines: Vec<u64> = oriented_shape
-                                .0
-                                .iter()
-                                .map(|&line| (line as u64) << x)
-                                .collect();
-                            if lines.iter().all(|&r| r & !mask == 0) {
-                                let mut possibility = vec![0u64; size_y];
-                                for (i, &r) in lines.iter().enumerate() {
-                                    possibility[y + i] = r;
+                                    if y + oriented_shape.0.len() > size_y {
+                                        continue;
+                                    }
+
+                                    let lines: Vec<u64> = oriented_shape
+                                        .0
+                                        .iter()
+                                        .map(|&line| (line as u64) << x)
+                                        .collect();
+                                    if lines.iter().all(|&r| r & !mask == 0) {
+                                        let mut possibility: Grid = vec![0u64; size_y];
+                                        for (i, &r) in lines.iter().enumerate() {
+                                            possibility[y + i] = r;
+                                        }
+                                        possibilities[slot].push(possibility);
+                                    }
                                 }
-                                possibilities[slot].push(possibility);
                             }
+                        }
+                        slot += 1;
+                    }
+                }
+                // for shape_possibilities in possibilities.iter().as_ref() {
+                //     for possibility in shape_possibilities {
+                //         for row in possibility {
+                //             for i in 0..size_x {
+                //                 print!("{}", if row & (1 << i) != 0 { '#' } else { '.' });
+                //             }
+                //             println!();
+                //         }
+                //         println!();
+                //     }
+                // }
+
+                println!(
+                    "SOLVER NEEDED: {}x{} pieces={} cells={} grid={}",
+                    size_x,
+                    size_y,
+                    total_pieces,
+                    total_cells,
+                    size_x * size_y
+                );
+                // After building possibilities and groups, before solving:
+                // Sort groups so the shape type with fewest placements-per-copy goes first
+                let mut group_order: Vec<usize> = (0..6).collect(); // 6 shape types
+                group_order.sort_by_key(|&shape_id| {
+                    possibilities
+                        .iter()
+                        .zip(groups.iter())
+                        .find(|(_, g)| **g == shape_id)
+                        .map(|(p, _)| p.len())
+                        .unwrap_or(usize::MAX)
+                });
+                // Rebuild possibilities and groups in new order
+                let mut sorted_possibilities = Vec::new();
+                let mut sorted_groups = Vec::new();
+                for &shape_id in &group_order {
+                    for (p, &g) in possibilities.iter().zip(groups.iter()) {
+                        if g == shape_id {
+                            sorted_possibilities.push(p.clone());
+                            sorted_groups.push(g);
                         }
                     }
                 }
-                slot += 1;
-            }
-        }
-        // for shape_possibilities in possibilities {
-        //     for possibility in shape_possibilities {
-        //         for row in &possibility {
-        //             for i in 0..size_x {
-        //                 print!("{}", if row & (1 << i) != 0 { '#' } else { '.' });
-        //             }
-        //             println!();
-        //         }
-        //         println!();
-        //     }
-        // }
+                let possibilities = sorted_possibilities;
+                let groups = sorted_groups;
 
-        let mut grid = vec![0u64; size_y];
-        if solve(&possibilities, &mut grid, 0) {
-            counter += 1;
+                let piece_sizes: Vec<u32> = possibilities
+                    .iter()
+                    .map(|placements| placements[0].iter().map(|r| r.count_ones()).sum())
+                    .collect();
+                let mut grid = vec![0u64; size_y];
+                let mut remaining_cells = vec![0u32; possibilities.len() + 1];
+                for i in (0..possibilities.len()).rev() {
+                    remaining_cells[i] = remaining_cells[i + 1] + piece_sizes[i];
+                }
+
+                if solve_v2(
+                    &possibilities,
+                    &mut grid,
+                    0,
+                    &remaining_cells,
+                    size_x,
+                    &groups,
+                    &mut vec![0; groups.len()],
+                ) {
+                    counter += 1;
+                }
+            }
         }
     }
 
