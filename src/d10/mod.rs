@@ -206,7 +206,6 @@ pub fn bfs_solve_pattern(lights: &Vec<bool>, buttons: &Vec<Vec<usize>>) -> Vec<V
         // Test if current result fits our expected result...
         if check_res(&lights, &lights_state) {
             solutions.push(pre_buttons.clone());
-            continue
         }
 
         /*
@@ -255,8 +254,6 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
     let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
     let mut rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
     for i in 0..buttons.len() {
-        rem_buttons_global.remove(0);
-
         let buffer = BfsBufferP2 {
             lights_state: vec![false; len],
             button_index: i,
@@ -264,7 +261,9 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
             pressed_buttons: vec![0; 0],
             depth: 1,
         };
-        queue.push_back(buffer)
+        queue.push_back(buffer);
+
+        rem_buttons_global.remove(0);
     }
 
     while !queue.is_empty() {
@@ -289,8 +288,6 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
         }
 
         // If not, then start pushing further possibilities into the queue
-        // TODO: Trim the sent possibilities so we don't lose time on useless ones (For example using the same button twice)
-        // That is easily the best way to optimize this approach
         let mut rem_buttons = buffer.remaining_buttons.clone();
         for i in buffer.remaining_buttons.iter() {
             rem_buttons.remove(rem_buttons.iter().position(|&r| &r == i).unwrap());
@@ -328,7 +325,6 @@ pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solu
     if solutions_check.is_none()
     {
         solutions = bfs_solve_pattern(&lights, buttons);
-        solutions_cache[hash] = Some(solutions.clone());
     } else { solutions = solutions_check.unwrap() }
 
     let mut result: Option<u64> = None;
@@ -417,8 +413,9 @@ pub fn p2(input: &str) -> u64 {
         if presses == 404000
         {
             println!("AAAAAAAH")
+        } else {
+            count += presses;
         }
-        count += presses;
 
         println!("Progress...")
     }

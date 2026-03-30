@@ -1,6 +1,7 @@
 #![allow(warnings)]
 
 mod d1;
+mod d10;
 mod d11;
 mod d12;
 mod d2;
@@ -50,6 +51,10 @@ fn main() {
     // D9
     // println!("d9p1: {}", d9::p1(include_str!("d9/d9.txt")));
     // println!("d9p2: {}", d9::p2(include_str!("d9/d9.txt")));
+
+    // D10
+    // println!("d10p1: {}", d10::p1(include_str!("d10/d10.txt")));
+    // println!("d10p2: {}", d10::p2(include_str!("d10/d10.txt")));
 
     // D11
     // println!("d11p1: {}", d11::p1(include_str!("d11/d11.txt")));
