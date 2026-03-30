@@ -170,86 +170,9 @@ pub fn get_lights_hash(lights: &Vec<bool>) -> usize
     res
 }
 
-pub fn bfs_solve_pattern(lights: &Vec<bool>, buttons: &Vec<Vec<usize>>) -> Vec<Vec<usize>>
-{
-    let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
-    let rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
-    for i in 0..buttons.len() {
-        let mut rem_buttons = rem_buttons_global.clone();
-        rem_buttons.remove(i);
-
-        let buffer = BfsBufferP2 {
-            lights_state: vec![false; lights.len()],
-            button_index: i,
-            remaining_buttons: rem_buttons,
-            pressed_buttons: vec![0; 0],
-            depth: 1,
-        };
-        queue.push_back(buffer)
-    }
-
-    let mut explored_states: Vec<Vec<bool>> = vec![vec![false; lights.len()]; 0];
-    let mut solutions: Vec<Vec<usize>> = vec![];
-    while !queue.is_empty() {
-        let buffer = queue.pop_front().unwrap();
-        let button = &buttons[buffer.button_index];
-
-        let mut lights_state = buffer.lights_state;
-        // Apply button operations to our current state
-        for i in button {
-            lights_state[*i] = !lights_state[*i]
-        }
-
-        let mut pre_buttons = buffer.pressed_buttons;
-        pre_buttons.push(buffer.button_index);
-
-        // Test if current result fits our expected result...
-        if check_res(&lights, &lights_state) {
-            solutions.push(pre_buttons.clone());
-        }
-
-        /*
-        let mut explored = false;
-        for explored_state in explored_states.iter() {
-            if check_res(&lights_state, &explored_state) {
-                explored = true;
-                break;
-            }
-        }
-        if explored {
-            continue;
-        }
-
-        explored_states.push(lights_state.clone());
-         */
-
-        // If not, then start pushing further possibilities into the queue
-        // TODO: Trim the sent possibilities so we don't lose time on useless ones (For example using the same button twice)
-        // That is easily the best way to optimize this approach
-        let mut rem_buttons = buffer.remaining_buttons.clone();
-        for i in buffer.remaining_buttons.iter() {
-            rem_buttons.remove(rem_buttons.iter().position(|&r| &r == i).unwrap());
-
-            let new_buffer = BfsBufferP2 {
-                lights_state: lights_state.clone(),
-                button_index: *i,
-                remaining_buttons: rem_buttons.clone(),
-                pressed_buttons: pre_buttons.clone(),
-                depth: buffer.depth + 1,
-            };
-            queue.push_back(new_buffer)
-        }
-    }
-
-    solutions
-}
-
 pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Vec<Vec<usize>>>>
 {
     let mut cache = vec![None; usize::pow(2, len as u32)];
-
-    cache[0] = Some(vec![]);
-    for i in 0..buttons.len() { cache[0].as_mut().unwrap().push(vec![i; 2]) }
 
     let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
     let mut rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
@@ -263,7 +186,7 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
         };
         queue.push_back(buffer);
 
-        rem_buttons_global.remove(0);
+        //rem_buttons_global.remove(0);
     }
 
     while !queue.is_empty() {
@@ -324,7 +247,7 @@ pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solu
     let solutions_check = solutions_cache[hash].clone();
     if solutions_check.is_none()
     {
-        solutions = bfs_solve_pattern(&lights, buttons);
+        solutions = vec![];
     } else { solutions = solutions_check.unwrap() }
 
     let mut result: Option<u64> = None;
