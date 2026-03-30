@@ -21,17 +21,15 @@ fn is_invalid_id_p2(id: String) -> bool {
             .map(|chunk| chunk.iter().collect::<String>())
             .collect::<Vec<String>>();
 
-        if sections.iter().all(|section| {
-            *section == sections[0]
-        }) {
-            return true
+        if sections.iter().all(|section| *section == sections[0]) {
+            return true;
         }
     }
     false
 }
 
 pub fn p1(input: &str) -> u64 {
-    let segments = input.split(",");
+    let segments = input.trim().split(",");
     let mut total = 0;
 
     for segment in segments {
@@ -41,13 +39,13 @@ pub fn p1(input: &str) -> u64 {
             .expect("lower not found")
             .to_string()
             .parse()
-            .expect("lower is not u32");
+            .expect("lower is not u64");
         let upper: u64 = bounds
             .next()
             .expect("upper not found")
             .to_string()
             .parse()
-            .expect("upper is not u32");
+            .expect("upper is not u64");
 
         for i in lower..=upper {
             let i_str = i.to_string();
@@ -62,7 +60,7 @@ pub fn p1(input: &str) -> u64 {
 }
 
 pub fn p2(input: &str) -> u64 {
-    let segments = input.split(",");
+    let segments = input.trim().split(",");
     let mut total = 0;
 
     for segment in segments {
@@ -72,13 +70,13 @@ pub fn p2(input: &str) -> u64 {
             .expect("lower not found")
             .to_string()
             .parse()
-            .expect("lower is not u32");
+            .expect("lower is not u64");
         let upper: u64 = bounds
             .next()
             .expect("upper not found")
             .to_string()
             .parse()
-            .expect("upper is not u32");
+            .expect("upper is not u64");
 
         for i in lower..=upper {
             let i_str = i.to_string();

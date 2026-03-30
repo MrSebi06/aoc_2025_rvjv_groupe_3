@@ -145,33 +145,35 @@ struct BfsBufferP2 {
     depth: u64,
 }
 
-pub fn is_voltage_even(voltage: &Vec<usize>) -> bool
-{
-    for v in voltage
-    {
-        if *v % 2 != 0 { return false }
+pub fn is_voltage_even(voltage: &Vec<usize>) -> bool {
+    for v in voltage {
+        if *v % 2 != 0 {
+            return false;
+        }
     }
     true
 }
 
-pub fn is_voltage_null(voltage: &Vec<usize>) -> bool
-{
-    for v in voltage
-    {
-        if *v != 0 { return false }
+pub fn is_voltage_null(voltage: &Vec<usize>) -> bool {
+    for v in voltage {
+        if *v != 0 {
+            return false;
+        }
     }
     true
 }
 
-pub fn get_lights_hash(lights: &Vec<bool>) -> usize
-{
+pub fn get_lights_hash(lights: &Vec<bool>) -> usize {
     let mut res = 0;
-    for i in 0..lights.len() { if lights[i] { res += usize::pow(2, i as u32) } }
+    for i in 0..lights.len() {
+        if lights[i] {
+            res += usize::pow(2, i as u32)
+        }
+    }
     res
 }
 
-pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Vec<Vec<usize>>>>
-{
+pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Vec<Vec<usize>>>> {
     let mut cache = vec![None; usize::pow(2, len as u32)];
 
     let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
@@ -231,10 +233,15 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
 
 // This recursive approach is taken from u/tenthmascot's fascinating post on Reddit: https://www.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
 // The Rust implementation, of course, is home-made with love
-pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solutions_cache: &mut Vec<Option<Vec<Vec<usize>>>>) -> u64
-{
+pub fn presses_for_voltage(
+    voltage: &Vec<usize>,
+    buttons: &Vec<Vec<usize>>,
+    solutions_cache: &mut Vec<Option<Vec<Vec<usize>>>>,
+) -> u64 {
     // Recursive exit condition: If all voltages == 0, then we are done.
-    if is_voltage_null(voltage) { return 0 }
+    if is_voltage_null(voltage) {
+        return 0;
+    }
 
     // What should the indicator lights look like when we're done...?
     let lights = voltage_to_lights(&voltage);
@@ -245,36 +252,39 @@ pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solu
 
     // What are the solutions to reach these indicator lights according to P1?
     let solutions_check = solutions_cache[hash].clone();
-    if solutions_check.is_none()
-    {
+    if solutions_check.is_none() {
         solutions = vec![];
-    } else { solutions = solutions_check.unwrap() }
+    } else {
+        solutions = solutions_check.unwrap()
+    }
 
     let mut result: Option<u64> = None;
-    for solution in solutions
-    {
+    for solution in solutions {
         // Let's apply this solution to our voltage, and then divide the resulting voltage by 2
         let mut new_voltage = voltage.clone();
         let mut invalid_flag = false;
-        for button_i in solution.clone()
-        {
+        for button_i in solution.clone() {
             for i in buttons[button_i].clone() {
-
                 // Be careful of invalid solutions that overflow
-                if new_voltage[i] == 0 { invalid_flag = true; break }
-                else { new_voltage[i] -= 1 };
-
+                if new_voltage[i] == 0 {
+                    invalid_flag = true;
+                    break;
+                } else {
+                    new_voltage[i] -= 1
+                };
             }
-            if invalid_flag { break }
+            if invalid_flag {
+                break;
+            }
         }
 
-        if invalid_flag { continue }
+        if invalid_flag {
+            continue;
+        }
 
         let mut divisions = 0;
-        if !is_voltage_null(&new_voltage)
-        {
-            while is_voltage_even(&new_voltage)
-            {
+        if !is_voltage_null(&new_voltage) {
+            while is_voltage_even(&new_voltage) {
                 for i in 0..new_voltage.len() {
                     new_voltage[i] /= 2
                 }
@@ -287,7 +297,9 @@ pub fn presses_for_voltage(voltage: &Vec<usize>, buttons: &Vec<Vec<usize>>, solu
 
         if count < result.unwrap_or(404000) {
             // You can't get much lower than 1 so...
-            if count == 1 { return 1 }
+            if count == 1 {
+                return 1;
+            }
             result = Some(count);
         }
     }
@@ -308,7 +320,6 @@ pub fn p2(input: &str) -> u64 {
         let mut buttons = vec![vec![0; 0]; 0];
         let mut voltage = vec![0; 0];
         for (i, button_str) in split.enumerate() {
-
             if button_str.starts_with('{') {
                 let button_str = &button_str[1..button_str.len() - 1];
                 let voltage_indicators = button_str.split(",");
@@ -333,8 +344,7 @@ pub fn p2(input: &str) -> u64 {
         let mut solutions_cache = brute_force_cache(&buttons, voltage.len());
 
         let presses = presses_for_voltage(&voltage, &buttons, &mut solutions_cache);
-        if presses == 404000
-        {
+        if presses == 404000 {
             println!("AAAAAAAH")
         } else {
             count += presses;

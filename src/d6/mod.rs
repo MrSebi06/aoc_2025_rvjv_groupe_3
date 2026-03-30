@@ -55,13 +55,25 @@ pub fn p2(input: &str) -> u64 {
     let mut lines = input.lines().collect::<Vec<&str>>();
     let lines_len = lines.len();
 
+    let first_line_len = lines.first().map_or(0, |l| l.len());
+    let mut padded = None;
+    if let Some(last) = lines.last() {
+        if last.len() < first_line_len {
+            padded = Some(format!("{:<width$}", last, width = first_line_len));
+        }
+    }
+    if let Some(p) = &padded {
+        lines.pop();
+        lines.push(p.as_str());
+    }
+
     let mut i = 0;
     let mut char: char;
 
     let mut numbers: Vec<u64> = vec![];
     let mut number: String = String::new();
 
-    while true {
+    loop {
         let line = lines[i];
         let mut chars = line.chars();
 
