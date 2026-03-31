@@ -327,23 +327,13 @@ pub fn p1(input: &str) -> u64 {
     counter
 }
 
-pub fn p2(input: &str) -> u64 {
-    0
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::d12::{p1, p2};
+    use crate::d12::p1;
 
     #[test]
     fn p1_test() {
         let input = include_str!("d12_test.txt");
         assert_eq!(p1(input), 2)
-    }
-
-    #[test]
-    fn p2_test() {
-        let input = include_str!("d12_test.txt");
-        assert_eq!(p2(input), 2)
     }
 }

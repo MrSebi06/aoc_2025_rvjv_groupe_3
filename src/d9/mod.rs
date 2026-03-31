@@ -1,7 +1,3 @@
-use std::cmp::max;
-use std::io::Split;
-use std::ops;
-
 pub fn p1(input: &str) -> u64 {
     let coords: Vec<(u64, u64)> = input
         .lines()
@@ -27,31 +23,6 @@ pub fn p1(input: &str) -> u64 {
     max_area
 }
 
-struct Vec2 {
-    x: i64,
-    y: i64,
-}
-
-impl Vec2 {
-    fn cross(&self, other: &Vec2) -> i64 {
-        (self.x * other.y) - (self.y * other.x)
-    }
-
-    fn dot(&self, other: &Vec2) -> i64 {
-        self.x * other.x + self.y * other.y
-    }
-}
-
-impl ops::Sub<&Vec2> for &Vec2 {
-    type Output = Vec2;
-
-    fn sub(self, rhs: &Vec2) -> Self::Output {
-        Vec2 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
 
 fn point_in_polygon(px: i64, py: i64, polygon: &[(i64, i64)]) -> bool {
     let mut inside = false;
@@ -91,56 +62,65 @@ pub fn p2(input: &str) -> u64 {
         let (x1, y1) = polygon_coords[i];
         for j in i + 1..polygon_coords.len() {
             let (x2, y2) = polygon_coords[j];
+            let area = (y2.abs_diff(y1) + 1) * (x2.abs_diff(x1) + 1);
+            if area < max_area {
+                continue;
+            }
             let rect_coords = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)];
+
             let mut rect_crosses = false;
             for rect_i in 0..rect_coords.len() {
                 if rect_crosses {
                     break;
                 }
-                // Rect segment
-                let p = Vec2 {
-                    x: rect_coords[rect_i].0,
-                    y: rect_coords[rect_i].1,
-                };
-                let pr = Vec2 {
-                    x: rect_coords[(rect_i + 1) % rect_coords.len()].0,
-                    y: rect_coords[(rect_i + 1) % rect_coords.len()].1,
-                };
+                let (rx1, ry1) = rect_coords[rect_i];
+                let (rx2, ry2) = rect_coords[(rect_i + 1) % rect_coords.len()];
+
                 for polygon_i in 0..polygon_coords.len() {
-                    // Polygon segment
-                    let q = Vec2 {
-                        x: polygon_coords[polygon_i].0,
-                        y: polygon_coords[polygon_i].1,
+                    let (px1, py1) = polygon_coords[polygon_i];
+                    let (px2, py2) = polygon_coords[(polygon_i + 1) % polygon_coords.len()];
+
+                    let r_horizontal = ry1 == ry2;
+                    let p_horizontal = py1 == py2;
+                    if r_horizontal == p_horizontal {
+                        continue;
+                    }
+
+                    let (hx1, hx2, hy, vx, vy1, vy2) = if r_horizontal {
+                        (
+                            rx1.min(rx2),
+                            rx1.max(rx2),
+                            ry1,
+                            px1,
+                            py1.min(py2),
+                            py1.max(py2),
+                        )
+                    } else {
+                        (
+                            px1.min(px2),
+                            px1.max(px2),
+                            py1,
+                            rx1,
+                            ry1.min(ry2),
+                            ry1.max(ry2),
+                        )
                     };
-                    let qs = Vec2 {
-                        x: polygon_coords[(polygon_i + 1) % polygon_coords.len()].0,
-                        y: polygon_coords[(polygon_i + 1) % polygon_coords.len()].1,
-                    };
 
-                    let r = &pr - &p;
-                    let s = &qs - &q;
-
-                    let r_cross_s = (&r).cross(&s);
-
-                    if r_cross_s != 0 {
-                        let t = (&q - &p).cross(&s) as f64 / r_cross_s as f64;
-                        let u = (&q - &p).cross(&r) as f64 / r_cross_s as f64;
-                        if (0f64 < t && t < 1f64) && (0f64 < u && u < 1f64) {
-                            // The rectangle and polygon segment cross
-                            rect_crosses = true;
-                            break;
-                        }
+                    if hx1 < vx && vx < hx2 && vy1 < hy && hy < vy2 {
+                        rect_crosses = true;
+                        break;
                     }
                 }
             }
             if !rect_crosses {
-                let corners = [(x2, y1), (x1, y2)];
-                let all_inside = corners.iter().all(|&(cx, cy)| {
+                let cx = (x1 + x2) / 2;
+                let cy = (y1 + y2) / 2;
+                let corners_and_center = [(x2, y1), (x1, y2), (cx, cy)];
+                let all_inside = corners_and_center.iter().all(|&(cx, cy)| {
                     is_polygon_vertex(cx, cy, &polygon_coords)
                         || point_in_polygon(cx, cy, &polygon_coords)
                 });
                 if all_inside {
-                    let area = (y2.abs_diff(y1) + 1) * (x2.abs_diff(x1) + 1);
                     max_area = max_area.max(area);
                 }
             }
