@@ -69,15 +69,14 @@ pub fn p1(input: &str) -> u64 {
         // There's probably more optimal but I'm short on sanity and time so we'll just...
 
         let mut queue: VecDeque<BfsBuffer> = VecDeque::new();
-        let rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
+        let mut rem_buttons_global: Vec<usize> = (0..buttons.len()).collect();
         for i in 0..buttons.len() {
-            let mut rem_buttons = rem_buttons_global.clone();
-            rem_buttons.remove(i);
+            rem_buttons_global.remove(0);
 
             let buffer = BfsBuffer {
                 lights_state: vec![false; expected_lights.len()],
                 button_index: i,
-                remaining_buttons: rem_buttons,
+                remaining_buttons: rem_buttons_global.clone(),
                 depth: 1,
             };
             queue.push_back(buffer)
@@ -142,7 +141,7 @@ struct BfsBufferP2 {
     button_index: usize,
     remaining_buttons: Vec<usize>,
     pressed_buttons: Vec<usize>,
-    depth: u64,
+    depth: usize,
 }
 
 pub fn is_voltage_even(voltage: &Vec<usize>) -> bool {
@@ -173,7 +172,7 @@ pub fn get_lights_hash(lights: &Vec<bool>) -> usize {
     res
 }
 
-pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Vec<Vec<usize>>>> {
+pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize, max_depth: usize) -> Vec<Option<Vec<Vec<usize>>>> {
     let mut cache = vec![None; usize::pow(2, len as u32)];
 
     let mut queue: VecDeque<BfsBufferP2> = VecDeque::new();
@@ -188,7 +187,7 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
         };
         queue.push_back(buffer);
 
-        //rem_buttons_global.remove(0);
+        rem_buttons_global.remove(0);
     }
 
     while !queue.is_empty() {
@@ -204,7 +203,6 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
         let mut pre_buttons = buffer.pressed_buttons;
         pre_buttons.push(buffer.button_index);
 
-        // Test if current result fits our expected result...
         let hash = get_lights_hash(&lights_state);
         if cache[hash].is_none() {
             cache[hash] = Some(vec![pre_buttons.clone(); 1])
@@ -212,10 +210,12 @@ pub fn brute_force_cache(buttons: &Vec<Vec<usize>>, len: usize) -> Vec<Option<Ve
             cache[hash].as_mut().unwrap().push(pre_buttons.clone());
         }
 
+        if buffer.depth >= max_depth { continue }
+
         // If not, then start pushing further possibilities into the queue
         let mut rem_buttons = buffer.remaining_buttons.clone();
         for i in buffer.remaining_buttons.iter() {
-            rem_buttons.remove(rem_buttons.iter().position(|&r| &r == i).unwrap());
+            rem_buttons.remove(0);
 
             let new_buffer = BfsBufferP2 {
                 lights_state: lights_state.clone(),
@@ -248,7 +248,7 @@ pub fn presses_for_voltage(
 
     // To avoid executing a BFS everytime, we'll cache the solutions found for each state.
     let hash = get_lights_hash(&lights);
-    let mut solutions;
+    let solutions;
 
     // What are the solutions to reach these indicator lights according to P1?
     let solutions_check = solutions_cache[hash].clone();
@@ -282,18 +282,12 @@ pub fn presses_for_voltage(
             continue;
         }
 
-        let mut divisions = 0;
-        if !is_voltage_null(&new_voltage) {
-            while is_voltage_even(&new_voltage) {
-                for i in 0..new_voltage.len() {
-                    new_voltage[i] /= 2
-                }
-                divisions += 1;
-            }
+        for i in 0..new_voltage.len() {
+            new_voltage[i] /= 2
         }
 
         let presses = presses_for_voltage(&new_voltage, &buttons, solutions_cache);
-        let count = u64::pow(2, divisions) * presses + solution.len() as u64;
+        let count = 2 * presses + solution.len() as u64;
 
         if count < result.unwrap_or(404000) {
             // You can't get much lower than 1 so...
@@ -341,15 +335,11 @@ pub fn p2(input: &str) -> u64 {
             buttons.push(triggers);
         }
 
-        let mut solutions_cache = brute_force_cache(&buttons, voltage.len());
+        let mut solutions_cache = brute_force_cache(&buttons, voltage.len(), buttons.len());
 
         let presses = presses_for_voltage(&voltage, &buttons, &mut solutions_cache);
-        if presses == 404000 {
-            println!("AAAAAAAH")
-        } else {
-            count += presses;
-        }
 
+        count += presses;
         println!("Progress...")
     }
 
