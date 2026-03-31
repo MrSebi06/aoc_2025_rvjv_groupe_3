@@ -23,7 +23,6 @@ pub fn p1(input: &str) -> u64 {
     max_area
 }
 
-
 fn point_in_polygon(px: i64, py: i64, polygon: &[(i64, i64)]) -> bool {
     let mut inside = false;
     let n = polygon.len();
@@ -32,7 +31,11 @@ fn point_in_polygon(px: i64, py: i64, polygon: &[(i64, i64)]) -> bool {
         let (xi, yi) = polygon[i];
         let (xj, yj) = polygon[j];
         if (yi > py) != (yj > py) {
-            let cross = (px - xi) * (yj - yi) - (py - yi) * (xj - xi);
+            let edge = (xj - xi, yj - yi);
+            let cross = (px - xi) * edge.1 - (py - yi) * edge.0;
+            if cross == 0 {
+                return true;
+            }
             if (yj > yi && cross < 0) || (yj < yi && cross > 0) {
                 inside = !inside;
             }
@@ -112,6 +115,18 @@ pub fn p2(input: &str) -> u64 {
                     }
                 }
             }
+            let mut polygon_vertex_inside_rect = false;
+            let (min_x, max_x) = (x1.min(x2), x1.max(x2));
+            let (min_y, max_y) = (y1.min(y2), y1.max(y2));
+            for &(px, py) in &polygon_coords {
+                if px > min_x && px < max_x && py > min_y && py < max_y {
+                    polygon_vertex_inside_rect = true;
+                    break;
+                }
+            }
+            if polygon_vertex_inside_rect {
+                continue;
+            }
             if !rect_crosses {
                 let cx = (x1 + x2) / 2;
                 let cy = (y1 + y2) / 2;
@@ -144,5 +159,11 @@ mod tests {
     fn p2_test() {
         let input = include_str!("d9_test.txt");
         assert_eq!(p2(input), 24)
+    }
+
+    #[test]
+    fn p2_test_custom() {
+        let input = include_str!("d9_test_custom.txt");
+        assert_eq!(p2(input), 45)
     }
 }

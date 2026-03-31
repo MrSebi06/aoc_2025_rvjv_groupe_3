@@ -4,19 +4,6 @@ type Grid = Vec<u64>;
 struct Shape([u8; 3]);
 
 impl Shape {
-    #[inline(always)]
-    fn a(&self) -> (u8) {
-        self.0[0]
-    }
-    #[inline(always)]
-    fn b(&self) -> (u8) {
-        self.0[1]
-    }
-    #[inline(always)]
-    fn c(&self) -> (u8) {
-        self.0[2]
-    }
-
     fn rotations(&self) -> [Shape; 4] {
         let r0 = *self;
         let r1 = r0.rotate90();
@@ -183,7 +170,6 @@ pub fn p1(input: &str) -> u64 {
             .splitn(2, 'x')
             .map(|v| v.parse::<usize>().unwrap());
         let (size_x, size_y) = (size.next().unwrap(), size.next().unwrap());
-        // let region_mask = vec![0u64; size_y];
         // println!("{region_mask:?}");
 
         let allowed_shapes: Vec<usize> = parts
@@ -274,31 +260,6 @@ pub fn p1(input: &str) -> u64 {
                     total_cells,
                     size_x * size_y
                 );
-                // After building possibilities and groups, before solving:
-                // Sort groups so the shape type with fewest placements-per-copy goes first
-                let mut group_order: Vec<usize> = (0..6).collect(); // 6 shape types
-                group_order.sort_by_key(|&shape_id| {
-                    possibilities
-                        .iter()
-                        .zip(groups.iter())
-                        .find(|(_, g)| **g == shape_id)
-                        .map(|(p, _)| p.len())
-                        .unwrap_or(usize::MAX)
-                });
-                // Rebuild possibilities and groups in new order
-                let mut sorted_possibilities = Vec::new();
-                let mut sorted_groups = Vec::new();
-                for &shape_id in &group_order {
-                    for (p, &g) in possibilities.iter().zip(groups.iter()) {
-                        if g == shape_id {
-                            sorted_possibilities.push(p.clone());
-                            sorted_groups.push(g);
-                        }
-                    }
-                }
-                let possibilities = sorted_possibilities;
-                let groups = sorted_groups;
-
                 let piece_sizes: Vec<u32> = possibilities
                     .iter()
                     .map(|placements| placements[0].iter().map(|r| r.count_ones()).sum())
@@ -309,14 +270,12 @@ pub fn p1(input: &str) -> u64 {
                     remaining_cells[i] = remaining_cells[i + 1] + piece_sizes[i];
                 }
 
-                if solve_v2(
+                if solve(
                     &possibilities,
                     &mut grid,
                     0,
                     &remaining_cells,
                     size_x,
-                    &groups,
-                    &mut vec![0; groups.len()],
                 ) {
                     counter += 1;
                 }
@@ -328,11 +287,11 @@ pub fn p1(input: &str) -> u64 {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::d12::p1;
 
     #[test]
-    fn p1_test() {
+    pub fn p1_test() {
         let input = include_str!("d12_test.txt");
         assert_eq!(p1(input), 2)
     }

@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::{
     collections::HashMap,
-    ops::{Add, Sub},
 };
 
 pub fn p1(input: &str) -> usize {
