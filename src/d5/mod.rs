@@ -129,6 +129,6 @@ mod tests {
     #[test]
     fn p2_test() {
         let input = include_str!("d5_test.txt");
-        assert_eq!(p2(input), 202)
+        assert_eq!(p2(input), 14)
     }
 }
