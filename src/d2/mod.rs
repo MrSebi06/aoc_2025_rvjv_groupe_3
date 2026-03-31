@@ -7,24 +7,31 @@ fn is_invalid_id_p1(id: String) -> bool {
     first == last
 }
 
-fn is_invalid_id_p2(id: String) -> bool {
-    let len = id.len();
+fn is_invalid_id_p2_n(id: u64, len: u32, n: u32) -> bool {
 
-    for i in 1..=len / 2 {
-        if len % i != 0 {
-            continue;
-        }
-        let sections = id
-            .chars()
-            .collect::<Vec<char>>()
-            .chunks(i)
-            .map(|chunk| chunk.iter().collect::<String>())
-            .collect::<Vec<String>>();
+    if len % n != 0 { return false }
 
-        if sections.iter().all(|section| *section == sections[0]) {
-            return true;
-        }
+    let pow10 = 10u64.pow(len / n);
+    let pattern = id % pow10;
+
+    let mut temp_id = id;
+    for _ in 1..n
+    {
+        temp_id /= pow10;
+        if temp_id % pow10 != pattern { return false }
     }
+
+    true
+}
+
+fn is_invalid_id_p2(id: u64) -> bool {
+    let len = id.ilog10() + 1;
+
+    for i in 2..=len
+    {
+        if is_invalid_id_p2_n(id, len, i) { return true }
+    }
+
     false
 }
 
@@ -48,9 +55,8 @@ pub fn p1(input: &str) -> u64 {
             .expect("upper is not u64");
 
         for i in lower..=upper {
-            let i_str = i.to_string();
-
-            if is_invalid_id_p1(i_str) {
+            let len = i.ilog10() + 1;
+            if is_invalid_id_p2_n(i, len, 2) {
                 total += i;
             }
         }
@@ -79,9 +85,7 @@ pub fn p2(input: &str) -> u64 {
             .expect("upper is not u64");
 
         for i in lower..=upper {
-            let i_str = i.to_string();
-
-            if is_invalid_id_p2(i_str) {
+            if is_invalid_id_p2(i) {
                 total += i;
             }
         }
